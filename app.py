@@ -60,6 +60,17 @@ limiter = Limiter(
     storage_uri="memory://",
 )
 
+# 启动时自动初始化数据库（兼容 gunicorn / 生产环境）
+with app.app_context():
+    db.create_all()
+    admin = User.query.filter_by(username='admin').first()
+    if not admin:
+        admin_password = os.environ.get('ADMIN_PASSWORD', 'admin123')
+        admin = User(username='admin', email='admin@startrack.com', is_admin=True)
+        admin.set_password(admin_password)
+        db.session.add(admin)
+        db.session.commit()
+
 
 # ─────────────────────────────────────────────
 # 安全响应头
@@ -845,7 +856,4 @@ def too_large(e):
 # 启动
 # ─────────────────────────────────────────────
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-        create_default_admin()
     app.run(debug=False, host='0.0.0.0', port=5000)
