@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}{{ g.t('site_title') }} — {{ g.t('subtitle') }}{% endblock %}
+
+{% block content %}
+<!-- Hero -->
+{% if not group_type and not search and not is_mine %}
+<section class="hero">
+    <div class="container">
+        <div class="hero-content">
+            <div class="hero-eyebrow"><i class="fas fa-bolt"></i> {{ g.t('subtitle') }}</div>
+            <h1 class="hero-title">Track Every <span class="accent">Star Moment</span></h1>
+            <p class="hero-desc">The ultimate platform to track, share, and discover celebrity schedules. Built by fans, for fans worldwide.</p>
+            <div class="hero-actions">
+                {% if current_user.is_authenticated %}
+                <a href="{{ url_for('add_schedule') }}" class="btn btn-primary btn-lg"><i class="fas fa-plus"></i> {{ g.t('add_schedule') }}</a>
+                {% else %}
+                <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg">{{ g.t('register') }}</a>
+                {% endif %}
+                <a href="#schedules" class="btn btn-ghost btn-lg">{{ g.t('all_schedules') }}</a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Search -->
+<section class="search-section">
+    <div class="container">
+        <form method="GET" action="{{ url_for('index') }}">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" name="search" value="{{ search }}" placeholder="{{ g.t('search') }} {{ g.t('star_name') }}, {{ g.t('event_name') }}...">
+            </div>
+        </form>
+    </div>
+</section>
+
+<!-- Filters -->
+<section class="filter-section" id="schedules">
+    <div class="container">
+        <div class="filter-tabs">
+            <a href="{{ url_for('index', year=year, month=month, day=day, search=search) }}" class="filter-tab {% if not group_type %}active{% endif %}">
+                <i class="fas fa-th"></i> {{ g.t('filter_all') }}
+            </a>
+            <a href="{{ url_for('index', group_type='solo', year=year, month=month, day=day, search=search) }}" class="filter-tab {% if group_type == 'solo' %}active{% endif %}">
+                {{ g.t('filter_solo') }}
+            </a>
+            <a href="{{ url_for('index', group_type='duo', year=year, month=month, day=day, search=search) }}" class="filter-tab {% if group_type == 'duo' %}active{% endif %}">
+                {{ g.t('filter_duo') }}
+            </a>
+            <a href="{{ url_for('index', group_type='group', year=year, month=month, day=day, search=search) }}" class="filter-tab {% if group_type == 'group' %}active{% endif %}">
+                {{ g.t('filter_group') }}
+            </a>
+        </div>
+
+        <form method="GET" action="{{ url_for('index') }}" class="date-filter" id="dateFilterForm">
+            <input type="hidden" name="group_type" value="{{ group_type }}">
+            <input type="hidden" name="search" value="{{ search }}">
+            <div class="date-filter-inner">
+                <div class="date-field">
+                    <label>{{ g.t('year') }}</label>
+                    <select name="year" onchange="document.getElementById('dateFilterForm').submit()">
+                        <option value="" {% if not year %}selected{% endif %}>{{ g.t('all_dates') }}</option>
+                        {% for y in year_range %}
+                        <option value="{{ y }}" {% if year == y %}selected{% endif %}>{{ y }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="date-field">
+                    <label>{{ g.t('month') }}</label>
+                    <select name="month" onchange="document.getElementById('dateFilterForm').submit()">
+                        <option value="" {% if not month %}selected{% endif %}>{{ g.t('all_dates') }}</option>
+                        {% for m in range(1, 13) %}
+                        <option value="{{ m }}" {% if month == m %}selected{% endif %}>{{ '%02d'|format(m) }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="date-field">
+                    <label>{{ g.t('day') }}</label>
+                    <select name="day" onchange="document.getElementById('dateFilterForm').submit()">
+                        <option value="" {% if not day %}selected{% endif %}>{{ g.t('all_dates') }}</option>
+                        {% for d in range(1, 32) %}
+                        <option value="{{ d }}" {% if day == d %}selected{% endif %}>{{ '%02d'|format(d) }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </form>
+    </div>
+</section>
+
+<!-- Schedules -->
+<section class="schedules-section">
+    <div class="container">
+        {% if is_mine %}
+        <div class="section-header">
+            <h2 class="section-title">{{ g.t('my_schedules') }}</h2>
+            <span class="section-count">{{ schedules|length }} items</span>
+        </div>
+        {% endif %}
+
+        {% if schedules %}
+        {% if not is_mine %}
+        <div class="section-header">
+            <h2 class="section-title">{{ g.t('all_schedules') }}</h2>
+            <span class="section-count">{{ pagination.total }} items</span>
+        </div>
+        {% endif %}
+
+        <div class="schedules-grid">
+            {% for schedule in schedules %}
+            <div class="schedule-card">
+                {% set can_manage = current_user.is_authenticated and (current_user.is_admin or current_user.id == schedule.creator_id) %}
+                {% if can_manage %}
+                <a href="{{ url_for('edit_schedule', schedule_id=schedule.id) }}" class="card-action-btn" title="{{ g.t('edit') }}">
+                    <i class="fas fa-pen"></i>
+                </a>
+                {% else %}
+                <div class="card-action-btn" style="pointer-events:none;"><i class="fas fa-play"></i></div>
+                {% endif %}
+
+                <div class="card-image">
+                    {% if schedule.event_image %}
+                    <img src="{{ url_for('static', filename='uploads/' + schedule.event_image) }}" alt="{{ schedule._get_localized('event_name', g.lang) }}" loading="lazy">
+                    {% else %}
+                    <div class="card-image-placeholder"><i class="fas fa-star"></i></div>
+                    {% endif %}
+                    <div class="card-tags">
+                        <span class="tag tag-{{ schedule.group_type }}">{{ g.t(schedule.group_type) }}</span>
+                    </div>
+                </div>
+
+                <div class="card-content">
+                    <div class="card-star">{{ schedule._get_localized('star_name', g.lang) }}</div>
+                    <div class="card-event">{{ schedule._get_localized('event_name', g.lang) }}</div>
+                    <div class="card-meta">
+                        {% if schedule.event_date %}
+                        <span class="meta-item"><i class="fas fa-calendar"></i> {{ schedule.event_date.strftime('%Y-%m-%d') }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if can_manage %}
+                <div class="card-actions">
+                    <form method="POST" action="{{ url_for('delete_schedule', schedule_id=schedule.id) }}" class="delete-form" onsubmit="return confirm('{{ g.t('confirm_delete') }}')">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-danger btn-sm"><i class="fas fa-trash"></i> {{ g.t('delete') }}</button>
+                    </form>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if pagination.pages > 1 %}
+        <div class="pagination">
+            {% if pagination.has_prev %}
+            <a href="{{ url_for('index', page=pagination.prev_num, group_type=group_type, year=year, month=month, day=day, search=search) }}" class="page-btn"><i class="fas fa-chevron-left"></i></a>
+            {% endif %}
+            <span class="page-info">{{ pagination.page }} / {{ pagination.pages }}</span>
+            {% if pagination.has_next %}
+            <a href="{{ url_for('index', page=pagination.next_num, group_type=group_type, year=year, month=month, day=day, search=search) }}" class="page-btn"><i class="fas fa-chevron-right"></i></a>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-calendar-times"></i>
+            <p>{{ g.t('no_schedules') }}</p>
+            <div class="btn-group">
+                <a href="{{ url_for('index') }}" class="btn btn-ghost">{{ g.t('refresh') }}</a>
+                {% if current_user.is_authenticated %}
+                <a href="{{ url_for('add_schedule') }}" class="btn btn-primary">{{ g.t('add_schedule') }}</a>
+                {% else %}
+                <a href="{{ url_for('register') }}" class="btn btn-primary">{{ g.t('register') }}</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

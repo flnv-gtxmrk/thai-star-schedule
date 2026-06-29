@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}{{ g.t('calendar') }} — {{ g.t('site_title') }}{% endblock %}
+{% block content %}
+<div class="calendar-page">
+    <div class="container">
+        <div class="calendar-header">
+            <a href="{{ url_for('calendar_view', year=prev_year, month=prev_month) }}" class="page-btn"><i class="fas fa-chevron-left"></i></a>
+            <h1 class="calendar-title">{{ year }} · {{ '%02d'|format(month) }}</h1>
+            <a href="{{ url_for('calendar_view', year=next_year, month=next_month) }}" class="page-btn"><i class="fas fa-chevron-right"></i></a>
+        </div>
+
+        <div class="calendar-grid">
+            <div class="calendar-weekday">Sun</div>
+            <div class="calendar-weekday">Mon</div>
+            <div class="calendar-weekday">Tue</div>
+            <div class="calendar-weekday">Wed</div>
+            <div class="calendar-weekday">Thu</div>
+            <div class="calendar-weekday">Fri</div>
+            <div class="calendar-weekday">Sat</div>
+
+            {% for week in month_days %}
+                {% for day in week %}
+                {% if day != 0 %}
+                    {% set current = date(year, month, day) %}
+                    {% set day_schedules = schedules_by_date.get(current, []) %}
+                    <div class="calendar-day {% if day_schedules %}has-events{% endif %}">
+                        <div class="calendar-day-number">{{ day }}</div>
+                        <div class="calendar-day-events">
+                            {% for schedule in day_schedules[:3] %}
+                            <a href="{{ url_for('schedule_detail', schedule_id=schedule.id) }}"
+                               class="calendar-event"
+                               data-id="{{ schedule.id }}"
+                               data-star="{{ schedule._get_localized('star_name', g.lang) }}"
+                               data-event="{{ schedule._get_localized('event_name', g.lang) }}"
+                               data-date="{{ schedule.event_date.strftime('%Y-%m-%d') }}"
+                               data-type="{{ g.t(schedule.group_type) }}"
+                               data-image="{% if schedule.event_image %}{{ url_for('static', filename='uploads/' + schedule.event_image) }}{% else %}{% endif %}"
+                               data-type-key="{{ schedule.group_type }}"
+                            >
+                                <span class="calendar-event-dot tag-{{ schedule.group_type }}"></span>
+                                <span class="calendar-event-text">{{ schedule._get_localized('star_name', g.lang) }}</span>
+                            </a>
+                            {% endfor %}
+                            {% if day_schedules|length > 3 %}
+                            <div class="calendar-more">+{{ day_schedules|length - 3 }} more</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="calendar-day empty"></div>
+                {% endif %}
+                {% endfor %}
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Hover Preview Tooltip -->
+<div class="calendar-tooltip" id="calendarTooltip">
+    <div class="tooltip-image">
+        <img id="tooltipImg" src="" alt="">
+        <div class="tooltip-no-image" id="tooltipNoImage"><i class="fas fa-star"></i></div>
+    </div>
+    <div class="tooltip-content">
+        <div class="tooltip-type" id="tooltipType"></div>
+        <div class="tooltip-star" id="tooltipStar"></div>
+        <div class="tooltip-event" id="tooltipEvent"></div>
+        <div class="tooltip-date" id="tooltipDate"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    const tooltip = document.getElementById('calendarTooltip');
+    const img = document.getElementById('tooltipImg');
+    const noImg = document.getElementById('tooltipNoImage');
+    const typeEl = document.getElementById('tooltipType');
+    const starEl = document.getElementById('tooltipStar');
+    const eventEl = document.getElementById('tooltipEvent');
+    const dateEl = document.getElementById('tooltipDate');
+
+    document.querySelectorAll('.calendar-event').forEach(el => {
+        el.addEventListener('mouseenter', function(e) {
+            const data = this.dataset;
+            typeEl.textContent = data.type;
+            typeEl.className = 'tooltip-type tag-' + data.typeKey;
+            starEl.textContent = data.star;
+            eventEl.textContent = data.event;
+            dateEl.textContent = data.date;
+
+            if (data.image) {
+                img.src = data.image;
+                img.style.display = 'block';
+                noImg.style.display = 'none';
+            } else {
+                img.src = '';
+                img.style.display = 'none';
+                noImg.style.display = 'flex';
+            }
+
+            tooltip.classList.add('show');
+        });
+
+        el.addEventListener('mousemove', function(e) {
+            const x = e.clientX + 16;
+            const y = e.clientY + 16;
+            const rect = tooltip.getBoundingClientRect();
+            const winW = window.innerWidth;
+            const winH = window.innerHeight;
+
+            let left = x;
+            let top = y;
+            if (left + rect.width > winW) left = e.clientX - rect.width - 16;
+            if (top + rect.height > winH) top = e.clientY - rect.height - 16;
+
+            tooltip.style.left = left + 'px';
+            tooltip.style.top = top + 'px';
+        });
+
+        el.addEventListener('mouseleave', function() {
+            tooltip.classList.remove('show');
+        });
+    });
+})();
+</script>
+{% endblock %}

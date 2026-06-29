@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}{{ g.t('edit') }} — {{ g.t('site_title') }}{% endblock %}
+{% block content %}
+<div class="form-page">
+    <div class="form-container">
+        <div class="form-header"><h1>{{ g.t('edit') }}</h1></div>
+        <form method="POST" enctype="multipart/form-data" class="schedule-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="form-section">
+                <div class="form-field">
+                    <label>{{ g.t('star_name') }} *</label>
+                    <input type="text" name="star_name" value="{{ schedule._get_localized('star_name', g.lang) }}" required placeholder="{{ g.t('star_name') }}">
+                </div>
+            </div>
+
+            <div class="form-section">
+                <div class="form-field">
+                    <label>{{ g.t('event_name') }} *</label>
+                    <input type="text" name="event_name" value="{{ schedule._get_localized('event_name', g.lang) }}" required placeholder="{{ g.t('event_name') }}">
+                </div>
+            </div>
+
+            <div class="form-section">
+                <div class="form-field">
+                    <label>{{ g.t('event_date') }}</label>
+                    <input type="date" name="event_date" value="{{ schedule.event_date.strftime('%Y-%m-%d') if schedule.event_date else '' }}">
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3 class="section-label">{{ g.t('group_type') }}</h3>
+                <div class="category-grid category-3">
+                    <label class="radio-card"><input type="radio" name="group_type" value="solo" {% if schedule.group_type=='solo' %}checked{% endif %}><div class="radio-content"><i class="fas fa-user"></i><span>{{ g.t('solo') }}</span></div></label>
+                    <label class="radio-card"><input type="radio" name="group_type" value="duo" {% if schedule.group_type=='duo' %}checked{% endif %}><div class="radio-content"><i class="fas fa-user-friends"></i><span>{{ g.t('duo') }}</span></div></label>
+                    <label class="radio-card"><input type="radio" name="group_type" value="group" {% if schedule.group_type=='group' %}checked{% endif %}><div class="radio-content"><i class="fas fa-users"></i><span>{{ g.t('group') }}</span></div></label>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3 class="section-label">{{ g.t('event_image') }}</h3>
+                <div class="image-upload" id="uploadArea">
+                    {% if schedule.event_image %}
+                    <img id="imagePreview" class="image-preview" src="{{ url_for('static', filename='uploads/' + schedule.event_image) }}" style="display:block">
+                    {% else %}
+                    <div class="upload-placeholder"><i class="fas fa-cloud-upload-alt"></i><p>{{ g.t('drag_drop') }}</p><span class="upload-hint">{{ g.t('max_size') }}</span></div>
+                    <img id="imagePreview" class="image-preview" style="display:none">
+                    {% endif %}
+                    <input type="file" name="event_image" id="eventImage" accept="image/*" class="file-input">
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <a href="{{ url_for('index') }}" class="btn btn-ghost">{{ g.t('cancel') }}</a>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> {{ g.t('save') }}</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+const fileInput=document.getElementById('eventImage'),preview=document.getElementById('imagePreview'),area=document.getElementById('uploadArea');
+fileInput.addEventListener('change',e=>{const f=e.target.files[0];if(f){const r=new FileReader();r.onload=e=>{preview.src=e.target.result;preview.style.display='block';area.classList.add('has-image')};r.readAsDataURL(f)}});
+area.addEventListener('dragover',e=>{e.preventDefault();area.classList.add('dragover')});
+area.addEventListener('dragleave',()=>area.classList.remove('dragover'));
+area.addEventListener('drop',e=>{e.preventDefault();area.classList.remove('dragover');if(e.dataTransfer.files.length){fileInput.files=e.dataTransfer.files;fileInput.dispatchEvent(new Event('change'))}});
+</script>
+{% endblock %}

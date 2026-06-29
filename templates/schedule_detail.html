@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}{{ schedule._get_localized('event_name', g.lang) }} — {{ g.t('site_title') }}{% endblock %}
+{% block content %}
+<div class="detail-page">
+    <div class="container">
+        <div class="detail-card">
+            <div class="detail-image">
+                {% if schedule.event_image %}
+                <img src="{{ url_for('static', filename='uploads/' + schedule.event_image) }}" alt="{{ schedule._get_localized('event_name', g.lang) }}">
+                {% else %}
+                <div class="detail-image-placeholder"><i class="fas fa-star"></i></div>
+                {% endif %}
+            </div>
+
+            <div class="detail-content">
+                <div class="detail-tags">
+                    <span class="tag tag-{{ schedule.group_type }}">{{ g.t(schedule.group_type) }}</span>
+                </div>
+
+                <h1 class="detail-title">{{ schedule._get_localized('event_name', g.lang) }}</h1>
+                <div class="detail-star">{{ schedule._get_localized('star_name', g.lang) }}</div>
+
+                <div class="detail-meta">
+                    {% if schedule.event_date %}
+                    <div class="detail-meta-item">
+                        <i class="fas fa-calendar"></i>
+                        <div>
+                            <span class="meta-label">{{ g.t('event_date') }}</span>
+                            <span class="meta-value">{{ schedule.event_date.strftime('%Y-%m-%d') }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                {% if schedule.description %}
+                <div class="detail-section">
+                    <h3>{{ g.t('description') }}</h3>
+                    <p>{{ schedule.description }}</p>
+                </div>
+                {% endif %}
+
+                <div class="detail-actions">
+                    <a href="{{ url_for('index') }}" class="btn btn-ghost">{{ g.t('home') }}</a>
+                    {% if current_user.is_authenticated and (current_user.is_admin or current_user.id == schedule.creator_id) %}
+                    <a href="{{ url_for('edit_schedule', schedule_id=schedule.id) }}" class="btn btn-primary"><i class="fas fa-pen"></i> {{ g.t('edit') }}</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
