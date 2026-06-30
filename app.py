@@ -823,7 +823,6 @@ def my_schedules():
 # 路由：日历视图
 # ─────────────────────────────────────────────
 @app.route('/calendar')
-@login_required
 def calendar_view():
     year = request.args.get('year', datetime.now().year, type=int)
     month = request.args.get('month', datetime.now().month, type=int)

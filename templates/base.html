@@ -23,12 +23,12 @@
                 <a href="{{ url_for('index') }}" class="nav-link {% if request.endpoint == 'index' %}active{% endif %}">
                     {{ g.t('home') }}
                 </a>
+                <a href="{{ url_for('calendar_view') }}" class="nav-link {% if request.endpoint == 'calendar_view' %}active{% endif %}">
+                    {{ g.t('calendar') }}
+                </a>
                 {% if current_user.is_authenticated %}
                 <a href="{{ url_for('add_schedule') }}" class="nav-link {% if request.endpoint == 'add_schedule' %}active{% endif %}">
                     {{ g.t('add_schedule') }}
-                </a>
-                <a href="{{ url_for('calendar_view') }}" class="nav-link {% if request.endpoint == 'calendar_view' %}active{% endif %}">
-                    {{ g.t('calendar') }}
                 </a>
                 <a href="{{ url_for('my_schedules') }}" class="nav-link {% if request.endpoint == 'my_schedules' %}active{% endif %}">
                     {{ g.t('my_schedules') }}
