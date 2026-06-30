@@ -1,115 +1,148 @@
-# 🌟 Thai Star Schedule
+# 🌟 StarTrack
 
-泰国明星行程追踪平台 - 支持中/英/泰三语
+**Thai celebrity schedule tracker** — track, share, and discover celebrity events.  
+**泰国明星行程追踪平台** — 追踪、分享、发现明星活动行程。
 
-## ✨ 功能特性
+[![Deploy](https://img.shields.io/badge/Live-thai--star--schedule.onrender.com-blue)](https://thai-star-schedule.onrender.com)
 
-- 📅 行程管理：添加、编辑、删除行程
-- 🖼️ 图片上传：支持拖拽上传，自动压缩
-- 🔍 搜索筛选：按艺人名称、活动名称搜索
-- 🏷️ 分类系统：单人/双人 × 男生/女生
-- 🌐 多语言：中文、English、ภาษาไทย
-- 👤 用户系统：注册、登录、权限管理
-- 🔒 权限控制：只能编辑/删除自己的行程
-- 📱 响应式：适配手机和桌面端
+---
 
-## 🚀 快速开始
+## 中文
 
-### 环境要求
+### 项目简介
 
-- Python 3.10+
-- pip
+StarTrack 是一个面向泰国明星粉丝的行程追踪网站。用户可以浏览、搜索明星活动，按月历查看行程，注册后即可添加/编辑/删除行程，支持多图上传和自定义标签。
 
-### 安装步骤
+### 功能特性
 
-1. **克隆或下载项目**
-   ```bash
-   cd thai-star-schedule
-   ```
+| 功能 | 说明 |
+|------|------|
+| 📅 行程管理 | 添加、编辑、删除行程（艺人名、活动名、日期时间、地点、描述） |
+| 🖼️ 多图上传 | 支持拖拽/多选上传，Pillow 自动压缩至 1200px，上限 16MB |
+| 🏷️ 自定义标签 | 每个行程可添加多个键值对标签（如票价、购票链接） |
+| 📆 日历视图 | 月历网格展示，按艺人筛选，鼠标悬停预览行程详情 |
+| 🔍 搜索筛选 | 按艺人/活动名搜索，按类型（单人/双人/多人）筛选，按年月日筛选 |
+| 🌐 三语切换 | English · 中文 · ภาษาไทย（默认英文） |
+| 🌓 双主题 | 深色蓝黑主题 / 浅色白黄主题，彩虹渐变强调色 |
+| ✨ 星空粒子 | Canvas 满屏闪烁星星背景 |
+| 👤 用户系统 | 注册/登录/退出，PBKDF2 密码哈希，管理员可管理全部行程 |
+| 🔒 安全防护 | CSRF、CSP、限流、文件内容校验、输入验证 |
+| 📱 响应式 | 5 级断点（1200/1024/768/480/360px），适配手机到桌面 |
 
-2. **安装依赖**
-   ```bash
-   pip install -r requirements.txt
-   ```
+### 快速开始
 
-3. **启动应用**
-   ```bash
-   # Windows
-   run.bat
+**环境要求**：Python 3.10+
 
-   # 或者手动启动
-   python app.py
-   ```
+```bash
+cd thai-star-schedule
+pip install -r requirements.txt
+python app.py
+```
 
-4. **访问网站**
-   打开浏览器访问: http://localhost:5000
+打开 http://localhost:5000
 
-## 📁 项目结构
+### 默认账户
+
+| 用户名 | 密码 | 说明 |
+|--------|------|------|
+| admin | admin123 | 管理员（可通过 `ADMIN_PASSWORD` 环境变量自定义） |
+
+### 部署
+
+本项目已部署于 [Render](https://thai-star-schedule.onrender.com)，每次 `git push` 自动部署。
+
+启动命令：`gunicorn wsgi:app`
+
+### 项目结构
 
 ```
 thai-star-schedule/
-├── app.py              # 主应用
-├── models.py           # 数据库模型
-├── requirements.txt    # 依赖包
-├── wsgi.py             # WSGI入口（生产部署）
-├── run.bat             # Windows启动脚本
+├── app.py                 # Flask 主应用（路由/安全/多语言）
+├── models.py              # 数据模型（User/Schedule/ScheduleImage/ScheduleTag）
+├── requirements.txt       # 依赖
+├── wsgi.py                # 生产环境入口
+├── seed.py                # 示例数据
+├── run.bat                # Windows 一键启动
+├── .github/workflows/     # GitHub Actions
 ├── static/
-│   ├── css/
-│   │   └── style.css   # 样式文件
-│   ├── js/
-│   │   └── main.js     # 前端逻辑
-│   └── uploads/        # 上传的图片
+│   ├── css/style.css      # 设计系统
+│   ├── js/main.js         # 粒子/主题/导航/语言
+│   └── uploads/           # 上传图片
 └── templates/
-    ├── base.html       # 基础模板
-    ├── index.html      # 首页
-    ├── login.html      # 登录页
-    ├── register.html   # 注册页
-    ├── add_schedule.html
-    ├── edit_schedule.html
-    └── error.html
+    ├── base.html          # 基础模板
+    ├── index.html         # 首页
+    ├── calendar.html      # 日历页
+    ├── schedule_detail.html # 详情页
+    ├── add_schedule.html  # 添加行程
+    ├── edit_schedule.html # 编辑行程
+    ├── login.html         # 登录
+    ├── register.html      # 注册
+    └── error.html         # 错误页
 ```
 
-## 🎨 设计风格
+---
 
-- **高饱和度色彩**：活力粉、电光紫、热力橙
-- **美式风格**：简约、现代、视觉冲击力强
-- **深色主题**：护眼、时尚
-- **流畅动画**：悬停效果、过渡动画
+## English
 
-## 🔧 配置说明
+### Overview
 
-### 环境变量（可选）
+StarTrack is a celebrity schedule tracking platform for Thai entertainment fans. Browse events, search by artist, view a monthly calendar, and — after signing up — add, edit, or delete schedules with multi-image uploads and custom tags.
 
-创建 `.env` 文件：
+### Features
 
-```env
-SECRET_KEY=your-secret-key
-DATABASE_URL=sqlite:///thaistar.db
-```
+| Feature | Description |
+|---------|-------------|
+| 📅 Schedule CRUD | Create, edit, delete events (artist, event name, date/time, location, description) |
+| 🖼️ Multi-image | Drag & drop multiple images, auto-compressed via Pillow (1200px max, 16MB limit) |
+| 🏷️ Custom tags | Key-value label pairs per schedule (e.g. ticket price, link) |
+| 📆 Calendar | Monthly grid with hover preview tooltip and artist filter dropdown |
+| 🔍 Search & filter | Search by artist/event name, filter by type (Solo/Duo/Group), filter by date |
+| 🌐 i18n | English · 中文 · ภาษาไทย (English default), session-based switching |
+| 🌓 Dual theme | Dark (blue/black) and Light (white/gold) with rainbow gradient accents |
+| ✨ Starfield | Canvas-based twinkling star background |
+| 👤 Auth | Register, login, logout with PBKDF2 password hashing; admin manages all content |
+| 🔒 Security | CSRF, CSP headers, rate limiting, image content verification, input validation |
+| 📱 Responsive | 5 breakpoints (1200/1024/768/480/360px) |
 
-### 生产部署
+### Quick Start
 
-使用 Gunicorn：
+**Requirements**: Python 3.10+
 
 ```bash
-gunicorn -w 4 -b 0.0.0.0:5000 wsgi:app
+cd thai-star-schedule
+pip install -r requirements.txt
+python app.py
 ```
 
-## 📝 API 接口
+Visit http://localhost:5000
 
-| 接口 | 方法 | 说明 |
-|------|------|------|
-| `/api/schedule/<id>` | GET | 获取行程详情 |
-| `/api/schedule/stats` | GET | 获取统计数据 |
+### Default Account
 
-## 🛡️ 安全特性
+| Username | Password | Notes |
+|----------|----------|-------|
+| admin | admin123 | Admin (customizable via `ADMIN_PASSWORD` env var) |
 
-- CSRF 保护
-- 密码哈希存储（PBKDF2）
-- 登录限流（防暴力破解）
-- 文件上传验证
-- 权限控制
+### Deployment
 
-## 📄 许可证
+Deployed on [Render](https://thai-star-schedule.onrender.com) with auto-deploy on `git push`.
 
-MIT License
+Start command: `gunicorn wsgi:app`
+
+### Tech Stack
+
+- **Backend**: Flask 3.x, Flask-Login, Flask-WTF, Flask-SQLAlchemy, Flask-Limiter
+- **Database**: SQLite (production-ready with PostgreSQL support via `DATABASE_URL`)
+- **Image**: Pillow with LANCZOS resampling
+- **Frontend**: Vanilla JS, CSS custom properties, Font Awesome 6, Google Fonts (Inter)
+- **Deploy**: Render + Gunicorn
+
+### API
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/schedule/<id>` | GET | Schedule detail (JSON) |
+| `/api/schedule/stats` | GET | Count by type |
+
+### License
+
+MIT
