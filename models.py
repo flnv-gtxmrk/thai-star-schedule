@@ -90,3 +90,14 @@ class Schedule(db.Model):
             th_val = getattr(self, f'{field}_th', None)
             return th_val if th_val else getattr(self, field)
         return getattr(self, field)
+
+
+class ScheduleImage(db.Model):
+    __tablename__ = 'schedule_images'
+
+    id = db.Column(db.Integer, primary_key=True)
+    filename = db.Column(db.String(500), nullable=False)
+    sort_order = db.Column(db.Integer, default=0)
+    schedule_id = db.Column(db.Integer, db.ForeignKey('schedules.id', ondelete='CASCADE'), nullable=False)
+
+    schedule = db.relationship('Schedule', backref=db.backref('images', lazy='dynamic', cascade='all, delete-orphan', order_by='ScheduleImage.sort_order'))

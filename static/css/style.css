@@ -777,6 +777,7 @@ ul, ol { list-style: none; }
     position: relative;
     border: 1px solid var(--border);
     min-width: 0;
+    cursor: pointer;
 }
 
 .schedule-card:hover {
@@ -1312,8 +1313,10 @@ ul, ol { list-style: none; }
     object-fit: contain;
 }
 
-.image-upload.has-image { padding: var(--space-4); }
-.image-upload.has-image .upload-placeholder { display: none; }
+.image-upload.has-image,
+.image-upload.has-images { padding: var(--space-4); }
+.image-upload.has-image .upload-placeholder,
+.image-upload.has-images .upload-placeholder { display: none; }
 
 /* Form Actions */
 .form-actions {
@@ -1638,6 +1641,99 @@ ul, ol { list-style: none; }
     margin-top: 2px;
 }
 
+/* ─── Home Card Hover Tooltip ─── */
+.card-tooltip {
+    position: fixed;
+    display: flex;
+    gap: var(--space-3);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-3);
+    width: 260px;
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(6px);
+    transition: all var(--duration-fast) var(--ease);
+    pointer-events: none;
+}
+
+.card-tooltip.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+/* ─── Multi-Image Previews ─── */
+.image-preview-grid {
+    display: flex;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+    margin-top: var(--space-3);
+}
+
+.image-preview-thumb {
+    width: 64px;
+    height: 64px;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+}
+
+.image-upload.has-images {
+    padding: var(--space-4);
+}
+
+.image-upload.has-images .upload-placeholder {
+    display: none;
+}
+
+/* Existing images (edit page) */
+.existing-images {
+    display: flex;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+    margin-bottom: var(--space-3);
+}
+
+.existing-image-item {
+    position: relative;
+    width: 80px;
+    height: 80px;
+}
+
+.existing-image-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+}
+
+.existing-image-remove {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 20px;
+    height: 20px;
+    background: var(--accent-red);
+    color: white;
+    border-radius: 50%;
+    font-size: 0.7rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity var(--duration-fast);
+}
+
+.existing-image-item:hover .existing-image-remove {
+    opacity: 1;
+}
+
 /* ─── Schedule Detail Page ─── */
 .detail-page {
     padding: var(--space-10) 0 var(--space-16);
@@ -1656,9 +1752,34 @@ ul, ol { list-style: none; }
 }
 
 .detail-image {
-    aspect-ratio: 1;
     background: var(--bg-surface);
     overflow: hidden;
+}
+
+.detail-image > img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    aspect-ratio: 1;
+}
+
+.detail-images-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+    width: 100%;
+    aspect-ratio: 1;
+}
+
+.detail-images-grid img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.detail-images-grid img:only-child {
+    grid-column: span 2;
+    grid-row: span 2;
 }
 
 .detail-image img {

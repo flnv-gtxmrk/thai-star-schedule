@@ -14,7 +14,7 @@ from flask_limiter.util import get_remote_address
 from werkzeug.utils import secure_filename
 from PIL import Image
 
-from models import db, User, Schedule
+from models import db, User, Schedule, ScheduleImage
 
 # ─────────────────────────────────────────────
 # 配置
@@ -192,6 +192,7 @@ TRANSLATIONS = {
         'filter_duo': '双人',
         'filter_group': '多人',
         'refresh': '刷新',
+        'multi_image': '支持多张图片',
         'year': '年',
         'month': '月',
         'day': '日',
@@ -264,6 +265,7 @@ TRANSLATIONS = {
         'filter_duo': 'Duo',
         'filter_group': 'Group',
         'refresh': 'Refresh',
+        'multi_image': 'Multiple images supported',
         'year': 'Year',
         'month': 'Month',
         'day': 'Day',
@@ -336,6 +338,7 @@ TRANSLATIONS = {
         'filter_duo': 'คู่',
         'filter_group': 'กลุ่ม',
         'refresh': 'รีเฟรช',
+        'multi_image': 'รองรับหลายภาพ',
         'year': 'ปี',
         'month': 'เดือน',
         'day': 'วัน',
@@ -605,6 +608,8 @@ def add_schedule():
         event_name = sanitize_text(request.form.get('event_name', ''), 500)
         event_date_str = request.form.get('event_date', '')
         group_type = request.form.get('group_type', 'solo')
+        event_location = request.form.get('event_location', '')
+        description = request.form.get('description', '')
 
         if not star_name or not event_name:
             flash(t('required_fields_missing'), 'error')
@@ -622,23 +627,42 @@ def add_schedule():
                 flash(t('invalid_date'), 'error')
                 return render_template('add_schedule.html')
 
-        # 处理图片
-        image_file = request.files.get('event_image')
-        image_filename = save_image(image_file) if image_file else None
-        if image_file and image_file.filename and not image_filename:
-            flash(t('invalid_image'), 'error')
-            return render_template('add_schedule.html')
-
+        # 创建行程
         schedule = Schedule(
             event_date=event_date,
-            event_image=image_filename,
             group_type=group_type,
             creator_id=current_user.id,
         )
         save_localized_field(schedule, 'star_name', star_name)
         save_localized_field(schedule, 'event_name', event_name)
+        save_localized_field(schedule, 'event_location', event_location)
+        schedule.description = description
+
+        # 处理多张图片
+        image_files = request.files.getlist('event_images')
+        saved_images = []
+        for idx, f in enumerate(image_files):
+            if f and f.filename:
+                filename = save_image(f)
+                if filename:
+                    saved_images.append((filename, idx))
+                elif any(f.filename for f in image_files if f.filename):
+                    flash(t('invalid_image'), 'error')
+                    return render_template('add_schedule.html')
 
         db.session.add(schedule)
+        db.session.flush()  # 获取 schedule.id
+
+        for filename, order in saved_images:
+            img = ScheduleImage(filename=filename, sort_order=order, schedule_id=schedule.id)
+            db.session.add(img)
+
+        # 向后兼容：设第一张为封面
+        if saved_images:
+            schedule.event_image = saved_images[0][0]
+        else:
+            schedule.event_image = None
+
         db.session.commit()
 
         flash(t('success_add'), 'success')
@@ -664,6 +688,8 @@ def edit_schedule(schedule_id):
         event_name = sanitize_text(request.form.get('event_name', ''), 500)
         event_date_str = request.form.get('event_date', '')
         group_type = request.form.get('group_type', 'solo')
+        event_location = request.form.get('event_location', '')
+        description = request.form.get('description', '')
 
         if not star_name or not event_name:
             flash(t('required_fields_missing'), 'error')
@@ -675,7 +701,9 @@ def edit_schedule(schedule_id):
 
         save_localized_field(schedule, 'star_name', star_name)
         save_localized_field(schedule, 'event_name', event_name)
+        save_localized_field(schedule, 'event_location', event_location)
         schedule.group_type = group_type
+        schedule.description = description
 
         if event_date_str:
             try:
@@ -686,15 +714,26 @@ def edit_schedule(schedule_id):
         else:
             schedule.event_date = None
 
-        # 处理新图片
-        image_file = request.files.get('event_image')
-        if image_file and image_file.filename:
-            new_image = save_image(image_file)
-            if not new_image:
-                flash(t('invalid_image'), 'error')
-                return render_template('edit_schedule.html', schedule=schedule)
-            delete_image(schedule.event_image)
-            schedule.event_image = new_image
+        # 处理多张图片
+        image_files = request.files.getlist('event_images')
+        has_new_images = any(f and f.filename for f in image_files)
+        if has_new_images:
+            # 删除旧图片
+            for img in schedule.images.all():
+                delete_image(img.filename)
+                db.session.delete(img)
+            # 保存新图片
+            for idx, f in enumerate(image_files):
+                if f and f.filename:
+                    filename = save_image(f)
+                    if filename:
+                        db.session.add(ScheduleImage(filename=filename, sort_order=idx, schedule_id=schedule.id))
+                    else:
+                        flash(t('invalid_image'), 'error')
+                        return render_template('edit_schedule.html', schedule=schedule)
+            # 更新封面
+            first = schedule.images.order_by(ScheduleImage.sort_order).first()
+            schedule.event_image = first.filename if first else None
 
         db.session.commit()
         flash(t('success_edit'), 'success')
@@ -715,6 +754,8 @@ def delete_schedule(schedule_id):
     if not current_user.is_admin and schedule.creator_id != current_user.id:
         abort(403)
 
+    for img in schedule.images.all():
+        delete_image(img.filename)
     delete_image(schedule.event_image)
     db.session.delete(schedule)
     db.session.commit()

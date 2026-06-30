@@ -5,7 +5,16 @@
     <div class="container">
         <div class="detail-card">
             <div class="detail-image">
-                {% if schedule.event_image %}
+                {% set all_images = schedule.images.all() %}
+                {% if all_images|length > 1 %}
+                <div class="detail-images-grid">
+                    {% for img in all_images %}
+                    <img src="{{ url_for('static', filename='uploads/' + img.filename) }}" alt="{{ schedule._get_localized('event_name', g.lang) }}">
+                    {% endfor %}
+                </div>
+                {% elif all_images|length == 1 %}
+                <img src="{{ url_for('static', filename='uploads/' + all_images[0].filename) }}" alt="{{ schedule._get_localized('event_name', g.lang) }}">
+                {% elif schedule.event_image %}
                 <img src="{{ url_for('static', filename='uploads/' + schedule.event_image) }}" alt="{{ schedule._get_localized('event_name', g.lang) }}">
                 {% else %}
                 <div class="detail-image-placeholder"><i class="fas fa-star"></i></div>
@@ -27,6 +36,15 @@
                         <div>
                             <span class="meta-label">{{ g.t('event_date') }}</span>
                             <span class="meta-value">{{ schedule.event_date.strftime('%Y-%m-%d') }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if schedule._get_localized('event_location', g.lang) %}
+                    <div class="detail-meta-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <div>
+                            <span class="meta-label">{{ g.t('event_location') }}</span>
+                            <span class="meta-value">{{ schedule._get_localized('event_location', g.lang) }}</span>
                         </div>
                     </div>
                     {% endif %}

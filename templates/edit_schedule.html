@@ -10,14 +10,14 @@
             <div class="form-section">
                 <div class="form-field">
                     <label>{{ g.t('star_name') }} *</label>
-                    <input type="text" name="star_name" value="{{ schedule._get_localized('star_name', g.lang) }}" required placeholder="{{ g.t('star_name') }}">
+                    <input type="text" name="star_name" value="{{ schedule._get_localized('star_name', g.lang) }}" required>
                 </div>
             </div>
 
             <div class="form-section">
                 <div class="form-field">
                     <label>{{ g.t('event_name') }} *</label>
-                    <input type="text" name="event_name" value="{{ schedule._get_localized('event_name', g.lang) }}" required placeholder="{{ g.t('event_name') }}">
+                    <input type="text" name="event_name" value="{{ schedule._get_localized('event_name', g.lang) }}" required>
                 </div>
             </div>
 
@@ -38,15 +38,38 @@
             </div>
 
             <div class="form-section">
+                <div class="form-field">
+                    <label>{{ g.t('event_location') }}</label>
+                    <input type="text" name="event_location" value="{{ schedule._get_localized('event_location', g.lang) or '' }}">
+                </div>
+            </div>
+
+            <div class="form-section">
+                <div class="form-field">
+                    <label>{{ g.t('description') }}</label>
+                    <textarea name="description" rows="3">{{ schedule.description or '' }}</textarea>
+                </div>
+            </div>
+
+            <div class="form-section">
                 <h3 class="section-label">{{ g.t('event_image') }}</h3>
-                <div class="image-upload" id="uploadArea">
-                    {% if schedule.event_image %}
-                    <img id="imagePreview" class="image-preview" src="{{ url_for('static', filename='uploads/' + schedule.event_image) }}" style="display:block">
-                    {% else %}
-                    <div class="upload-placeholder"><i class="fas fa-cloud-upload-alt"></i><p>{{ g.t('drag_drop') }}</p><span class="upload-hint">{{ g.t('max_size') }}</span></div>
-                    <img id="imagePreview" class="image-preview" style="display:none">
+                {% set existing_images = schedule.images.all() %}
+                <div class="existing-images" id="existingImages">
+                    {% if existing_images %}
+                    {% for img in existing_images %}
+                    <div class="existing-image-item">
+                        <img src="{{ url_for('static', filename='uploads/' + img.filename) }}">
+                        <button type="button" class="existing-image-remove" data-id="{{ img.id }}" title="Remove">&times;</button>
+                    </div>
+                    {% endfor %}
                     {% endif %}
-                    <input type="file" name="event_image" id="eventImage" accept="image/*" class="file-input">
+                </div>
+                <div class="image-upload" id="uploadArea">
+                    {% if not existing_images %}
+                    <div class="upload-placeholder"><i class="fas fa-cloud-upload-alt"></i><p>{{ g.t('drag_drop') }}</p><span class="upload-hint">{{ g.t('max_size') }} · {{ g.t('multi_image') }}</span></div>
+                    {% endif %}
+                    <input type="file" name="event_images" id="eventImages" accept="image/*" multiple class="file-input">
+                    <div class="image-preview-grid" id="imagePreviews"></div>
                 </div>
             </div>
 
@@ -60,10 +83,54 @@
 {% endblock %}
 {% block extra_js %}
 <script>
-const fileInput=document.getElementById('eventImage'),preview=document.getElementById('imagePreview'),area=document.getElementById('uploadArea');
-fileInput.addEventListener('change',e=>{const f=e.target.files[0];if(f){const r=new FileReader();r.onload=e=>{preview.src=e.target.result;preview.style.display='block';area.classList.add('has-image')};r.readAsDataURL(f)}});
-area.addEventListener('dragover',e=>{e.preventDefault();area.classList.add('dragover')});
-area.addEventListener('dragleave',()=>area.classList.remove('dragover'));
-area.addEventListener('drop',e=>{e.preventDefault();area.classList.remove('dragover');if(e.dataTransfer.files.length){fileInput.files=e.dataTransfer.files;fileInput.dispatchEvent(new Event('change'))}});
+const fileInput = document.getElementById('eventImages');
+const previewGrid = document.getElementById('imagePreviews');
+const uploadArea = document.getElementById('uploadArea');
+const placeholder = uploadArea.querySelector('.upload-placeholder');
+
+fileInput.addEventListener('change', () => {
+    previewGrid.innerHTML = '';
+    const files = Array.from(fileInput.files);
+    if (files.length) {
+        files.forEach(f => {
+            const r = new FileReader();
+            r.onload = e => {
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.className = 'image-preview-thumb';
+                img.title = f.name;
+                previewGrid.appendChild(img);
+            };
+            r.readAsDataURL(f);
+        });
+        if (placeholder) placeholder.style.display = 'none';
+        uploadArea.classList.add('has-images');
+    } else {
+        if (placeholder) placeholder.style.display = '';
+        uploadArea.classList.remove('has-images');
+    }
+});
+
+uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('dragover'); });
+uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
+uploadArea.addEventListener('drop', e => {
+    e.preventDefault(); uploadArea.classList.remove('dragover');
+    if (e.dataTransfer.files.length) {
+        fileInput.files = e.dataTransfer.files;
+        fileInput.dispatchEvent(new Event('change'));
+    }
+});
+
+// Remove existing image
+document.querySelectorAll('.existing-image-remove').forEach(btn => {
+    btn.addEventListener('click', () => {
+        btn.parentElement.style.display = 'none';
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'delete_images';
+        input.value = btn.dataset.id;
+        uploadArea.appendChild(input);
+    });
+});
 </script>
 {% endblock %}

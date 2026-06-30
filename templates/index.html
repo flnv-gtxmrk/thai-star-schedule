@@ -110,7 +110,17 @@
 
         <div class="schedules-grid">
             {% for schedule in schedules %}
-            <div class="schedule-card">
+            <div class="schedule-card"
+                     data-star="{{ schedule._get_localized('star_name', g.lang) }}"
+                     data-event="{{ schedule._get_localized('event_name', g.lang) }}"
+                     data-date="{{ schedule.event_date.strftime('%Y-%m-%d') if schedule.event_date else '' }}"
+                     data-type="{{ g.t(schedule.group_type) }}"
+                     data-type-key="{{ schedule.group_type }}"
+                     data-link="{{ url_for('schedule_detail', schedule_id=schedule.id) }}"
+                     {% if schedule.event_image %}
+                     data-image="{{ url_for('static', filename='uploads/' + schedule.event_image) }}"
+                     {% endif %}
+                >
                 {% set can_manage = current_user.is_authenticated and (current_user.is_admin or current_user.id == schedule.creator_id) %}
                 {% if can_manage %}
                 <a href="{{ url_for('edit_schedule', schedule_id=schedule.id) }}" class="card-action-btn" title="{{ g.t('edit') }}">
@@ -181,4 +191,74 @@
         {% endif %}
     </div>
 </section>
+
+<!-- Hover Tooltip -->
+<div class="card-tooltip" id="cardTooltip">
+    <div class="tooltip-image">
+        <img id="cardTooltipImg" src="" alt="">
+        <div class="tooltip-no-image" id="cardTooltipNoImg"><i class="fas fa-star"></i></div>
+    </div>
+    <div class="tooltip-content">
+        <div class="tooltip-type" id="cardTooltipType"></div>
+        <div class="tooltip-star" id="cardTooltipStar"></div>
+        <div class="tooltip-event" id="cardTooltipEvent"></div>
+        <div class="tooltip-date" id="cardTooltipDate"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    const tooltip = document.getElementById('cardTooltip');
+    const img = document.getElementById('cardTooltipImg');
+    const noImg = document.getElementById('cardTooltipNoImg');
+    const typeEl = document.getElementById('cardTooltipType');
+    const starEl = document.getElementById('cardTooltipStar');
+    const eventEl = document.getElementById('cardTooltipEvent');
+    const dateEl = document.getElementById('cardTooltipDate');
+
+    document.querySelectorAll('.schedule-card[data-star]').forEach(card => {
+        // Click to navigate to detail page (skip if clicking buttons/forms)
+        card.addEventListener('click', function(e) {
+            if (e.target.closest('button, form, a, .card-action-btn')) return;
+            if (card.dataset.link) window.location.href = card.dataset.link;
+        });
+
+        card.addEventListener('mouseenter', function() {
+            const d = this.dataset;
+            typeEl.textContent = d.type;
+            typeEl.className = 'tooltip-type tag-' + d.typeKey;
+            starEl.textContent = d.star;
+            eventEl.textContent = d.event;
+            dateEl.textContent = d.date || '';
+
+            if (d.image) {
+                img.src = d.image;
+                img.style.display = 'block';
+                noImg.style.display = 'none';
+            } else {
+                img.style.display = 'none';
+                noImg.style.display = 'flex';
+            }
+
+            tooltip.classList.add('show');
+        });
+
+        card.addEventListener('mousemove', function(e) {
+            const rect = tooltip.getBoundingClientRect();
+            let left = e.clientX + 16;
+            let top = e.clientY + 16;
+            if (left + rect.width > window.innerWidth) left = e.clientX - rect.width - 16;
+            if (top + rect.height > window.innerHeight) top = e.clientY - rect.height - 16;
+            tooltip.style.left = left + 'px';
+            tooltip.style.top = top + 'px';
+        });
+
+        card.addEventListener('mouseleave', function() {
+            tooltip.classList.remove('show');
+        });
+    });
+})();
+</script>
 {% endblock %}

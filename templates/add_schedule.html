@@ -38,15 +38,29 @@
             </div>
 
             <div class="form-section">
+                <div class="form-field">
+                    <label>{{ g.t('event_location') }}</label>
+                    <input type="text" name="event_location" placeholder="{{ g.t('event_location') }}">
+                </div>
+            </div>
+
+            <div class="form-section">
+                <div class="form-field">
+                    <label>{{ g.t('description') }}</label>
+                    <textarea name="description" rows="3" placeholder="{{ g.t('description') }}..."></textarea>
+                </div>
+            </div>
+
+            <div class="form-section">
                 <h3 class="section-label">{{ g.t('event_image') }}</h3>
                 <div class="image-upload" id="uploadArea">
                     <div class="upload-placeholder">
                         <i class="fas fa-cloud-upload-alt"></i>
                         <p>{{ g.t('drag_drop') }}</p>
-                        <span class="upload-hint">{{ g.t('max_size') }} · JPG, PNG, GIF, WebP</span>
+                        <span class="upload-hint">{{ g.t('max_size') }} · JPG, PNG, GIF, WebP · {{ g.t('multi_image') }}</span>
                     </div>
-                    <input type="file" name="event_image" id="eventImage" accept="image/*" class="file-input">
-                    <img id="imagePreview" class="image-preview" style="display:none">
+                    <input type="file" name="event_images" id="eventImages" accept="image/*" multiple class="file-input">
+                    <div class="image-preview-grid" id="imagePreviews"></div>
                 </div>
             </div>
 
@@ -60,10 +74,42 @@
 {% endblock %}
 {% block extra_js %}
 <script>
-const fileInput=document.getElementById('eventImage'),preview=document.getElementById('imagePreview'),area=document.getElementById('uploadArea');
-fileInput.addEventListener('change',e=>{const f=e.target.files[0];if(f){const r=new FileReader();r.onload=e=>{preview.src=e.target.result;preview.style.display='block';area.classList.add('has-image')};r.readAsDataURL(f)}});
-area.addEventListener('dragover',e=>{e.preventDefault();area.classList.add('dragover')});
-area.addEventListener('dragleave',()=>area.classList.remove('dragover'));
-area.addEventListener('drop',e=>{e.preventDefault();area.classList.remove('dragover');if(e.dataTransfer.files.length){fileInput.files=e.dataTransfer.files;fileInput.dispatchEvent(new Event('change'))}});
+const fileInput = document.getElementById('eventImages');
+const previewGrid = document.getElementById('imagePreviews');
+const uploadArea = document.getElementById('uploadArea');
+const placeholder = uploadArea.querySelector('.upload-placeholder');
+
+fileInput.addEventListener('change', () => {
+    previewGrid.innerHTML = '';
+    const files = Array.from(fileInput.files);
+    if (files.length) {
+        files.forEach((f, i) => {
+            const r = new FileReader();
+            r.onload = e => {
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.className = 'image-preview-thumb';
+                img.title = f.name;
+                previewGrid.appendChild(img);
+            };
+            r.readAsDataURL(f);
+        });
+        placeholder.style.display = 'none';
+        uploadArea.classList.add('has-images');
+    } else {
+        placeholder.style.display = '';
+        uploadArea.classList.remove('has-images');
+    }
+});
+
+uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('dragover'); });
+uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
+uploadArea.addEventListener('drop', e => {
+    e.preventDefault(); uploadArea.classList.remove('dragover');
+    if (e.dataTransfer.files.length) {
+        fileInput.files = e.dataTransfer.files;
+        fileInput.dispatchEvent(new Event('change'));
+    }
+});
 </script>
 {% endblock %}
