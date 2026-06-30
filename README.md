@@ -41,12 +41,6 @@ python app.py
 
 打开 http://localhost:5000
 
-### 默认账户
-
-| 用户名 | 密码 | 说明 |
-|--------|------|------|
-| admin | admin123 | 管理员（可通过 `ADMIN_PASSWORD` 环境变量自定义） |
-
 ### 部署
 
 本项目已部署于 [Render](https://thai-star-schedule.onrender.com)，每次 `git push` 自动部署。
