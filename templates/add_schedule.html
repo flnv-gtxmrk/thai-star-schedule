@@ -22,9 +22,16 @@
             </div>
 
             <div class="form-section">
-                <div class="form-field">
-                    <label>{{ g.t('event_date') }}</label>
-                    <input type="date" name="event_date">
+                <h3 class="section-label">{{ g.t('event_date') }} / {{ g.t('event_time') }}</h3>
+                <div class="datetime-grid">
+                    <div class="form-field">
+                        <label>{{ g.t('event_date') }}</label>
+                        <input type="date" name="event_date">
+                    </div>
+                    <div class="form-field">
+                        <label>{{ g.t('event_time') }}</label>
+                        <input type="time" name="event_time">
+                    </div>
                 </div>
             </div>
 
@@ -64,6 +71,13 @@
                 </div>
             </div>
 
+            <div class="form-section">
+                <h3 class="section-label">{{ g.t('custom_tags') }}
+                    <button type="button" class="tag-add-btn" id="addTagRow"><i class="fas fa-plus"></i> {{ g.t('add_tag') }}</button>
+                </h3>
+                <div class="tag-rows" id="tagRows"></div>
+            </div>
+
             <div class="form-actions">
                 <a href="{{ url_for('index') }}" class="btn btn-ghost">{{ g.t('cancel') }}</a>
                 <button type="submit" class="btn btn-primary"><i class="fas fa-plus"></i> {{ g.t('submit') }}</button>
@@ -74,6 +88,7 @@
 {% endblock %}
 {% block extra_js %}
 <script>
+// ── Multi-image upload
 const fileInput = document.getElementById('eventImages');
 const previewGrid = document.getElementById('imagePreviews');
 const uploadArea = document.getElementById('uploadArea');
@@ -111,5 +126,21 @@ uploadArea.addEventListener('drop', e => {
         fileInput.dispatchEvent(new Event('change'));
     }
 });
+
+// ── Custom tags
+const tagRows = document.getElementById('tagRows');
+const addTagBtn = document.getElementById('addTagRow');
+
+function createTagRow() {
+    const row = document.createElement('div');
+    row.className = 'tag-row';
+    row.innerHTML = '<input type="text" name="tag_title" placeholder="{{ g.t("tag_title_placeholder") }}" class="tag-title-input">' +
+        '<input type="text" name="tag_content" placeholder="{{ g.t("tag_content_placeholder") }}" class="tag-content-input">' +
+        '<button type="button" class="tag-remove-btn"><i class="fas fa-times"></i></button>';
+    row.querySelector('.tag-remove-btn').addEventListener('click', () => row.remove());
+    return row;
+}
+
+addTagBtn.addEventListener('click', () => tagRows.appendChild(createTagRow()));
 </script>
 {% endblock %}

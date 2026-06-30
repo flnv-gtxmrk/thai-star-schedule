@@ -101,3 +101,14 @@ class ScheduleImage(db.Model):
     schedule_id = db.Column(db.Integer, db.ForeignKey('schedules.id', ondelete='CASCADE'), nullable=False)
 
     schedule = db.relationship('Schedule', backref=db.backref('images', lazy='dynamic', cascade='all, delete-orphan', order_by='ScheduleImage.sort_order'))
+
+
+class ScheduleTag(db.Model):
+    __tablename__ = 'schedule_tags'
+
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    schedule_id = db.Column(db.Integer, db.ForeignKey('schedules.id', ondelete='CASCADE'), nullable=False)
+
+    schedule = db.relationship('Schedule', backref=db.backref('tags', lazy='dynamic', cascade='all, delete-orphan'))

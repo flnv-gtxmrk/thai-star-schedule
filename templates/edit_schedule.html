@@ -22,9 +22,16 @@
             </div>
 
             <div class="form-section">
-                <div class="form-field">
-                    <label>{{ g.t('event_date') }}</label>
-                    <input type="date" name="event_date" value="{{ schedule.event_date.strftime('%Y-%m-%d') if schedule.event_date else '' }}">
+                <h3 class="section-label">{{ g.t('event_date') }} / {{ g.t('event_time') }}</h3>
+                <div class="datetime-grid">
+                    <div class="form-field">
+                        <label>{{ g.t('event_date') }}</label>
+                        <input type="date" name="event_date" value="{{ schedule.event_date.strftime('%Y-%m-%d') if schedule.event_date else '' }}">
+                    </div>
+                    <div class="form-field">
+                        <label>{{ g.t('event_time') }}</label>
+                        <input type="time" name="event_time" value="{{ schedule.event_time or '' }}">
+                    </div>
                 </div>
             </div>
 
@@ -73,6 +80,21 @@
                 </div>
             </div>
 
+            <div class="form-section">
+                <h3 class="section-label">{{ g.t('custom_tags') }}
+                    <button type="button" class="tag-add-btn" id="addTagRow"><i class="fas fa-plus"></i> {{ g.t('add_tag') }}</button>
+                </h3>
+                <div class="tag-rows" id="tagRows">
+                    {% for tag in schedule.tags.all() %}
+                    <div class="tag-row">
+                        <input type="text" name="tag_title" placeholder="{{ g.t('tag_title_placeholder') }}" value="{{ tag.title }}" class="tag-title-input">
+                        <input type="text" name="tag_content" placeholder="{{ g.t('tag_content_placeholder') }}" value="{{ tag.content }}" class="tag-content-input">
+                        <button type="button" class="tag-remove-btn"><i class="fas fa-times"></i></button>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
             <div class="form-actions">
                 <a href="{{ url_for('index') }}" class="btn btn-ghost">{{ g.t('cancel') }}</a>
                 <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> {{ g.t('save') }}</button>
@@ -83,6 +105,7 @@
 {% endblock %}
 {% block extra_js %}
 <script>
+// ── Multi-image upload
 const fileInput = document.getElementById('eventImages');
 const previewGrid = document.getElementById('imagePreviews');
 const uploadArea = document.getElementById('uploadArea');
@@ -90,24 +113,20 @@ const placeholder = uploadArea.querySelector('.upload-placeholder');
 
 fileInput.addEventListener('change', () => {
     previewGrid.innerHTML = '';
-    const files = Array.from(fileInput.files);
-    if (files.length) {
-        files.forEach(f => {
-            const r = new FileReader();
-            r.onload = e => {
-                const img = document.createElement('img');
-                img.src = e.target.result;
-                img.className = 'image-preview-thumb';
-                img.title = f.name;
-                previewGrid.appendChild(img);
-            };
-            r.readAsDataURL(f);
-        });
+    Array.from(fileInput.files).forEach(f => {
+        const r = new FileReader();
+        r.onload = e => {
+            const img = document.createElement('img');
+            img.src = e.target.result;
+            img.className = 'image-preview-thumb';
+            img.title = f.name;
+            previewGrid.appendChild(img);
+        };
+        r.readAsDataURL(f);
+    });
+    if (fileInput.files.length) {
         if (placeholder) placeholder.style.display = 'none';
         uploadArea.classList.add('has-images');
-    } else {
-        if (placeholder) placeholder.style.display = '';
-        uploadArea.classList.remove('has-images');
     }
 });
 
@@ -115,22 +134,27 @@ uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.cl
 uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
 uploadArea.addEventListener('drop', e => {
     e.preventDefault(); uploadArea.classList.remove('dragover');
-    if (e.dataTransfer.files.length) {
-        fileInput.files = e.dataTransfer.files;
-        fileInput.dispatchEvent(new Event('change'));
-    }
+    if (e.dataTransfer.files.length) { fileInput.files = e.dataTransfer.files; fileInput.dispatchEvent(new Event('change')); }
 });
 
 // Remove existing image
 document.querySelectorAll('.existing-image-remove').forEach(btn => {
-    btn.addEventListener('click', () => {
-        btn.parentElement.style.display = 'none';
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = 'delete_images';
-        input.value = btn.dataset.id;
-        uploadArea.appendChild(input);
-    });
+    btn.addEventListener('click', () => { btn.parentElement.style.display = 'none'; });
 });
+
+// ── Custom tags
+const tagRows = document.getElementById('tagRows');
+const addTagBtn = document.getElementById('addTagRow');
+function createTagRow() {
+    const row = document.createElement('div');
+    row.className = 'tag-row';
+    row.innerHTML = '<input type="text" name="tag_title" placeholder="{{ g.t("tag_title_placeholder") }}" class="tag-title-input">' +
+        '<input type="text" name="tag_content" placeholder="{{ g.t("tag_content_placeholder") }}" class="tag-content-input">' +
+        '<button type="button" class="tag-remove-btn"><i class="fas fa-times"></i></button>';
+    row.querySelector('.tag-remove-btn').addEventListener('click', () => row.remove());
+    return row;
+}
+addTagBtn.addEventListener('click', () => tagRows.appendChild(createTagRow()));
+document.querySelectorAll('.tag-remove-btn').forEach(b => b.addEventListener('click', function() { this.parentElement.remove(); }));
 </script>
 {% endblock %}

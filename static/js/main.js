@@ -13,16 +13,15 @@ document.addEventListener('DOMContentLoaded', () => {
     initLangSwitcher();
 });
 
-// ─── Particle System ───
+// ─── Starfield Particle System ───
 function initParticles() {
     const canvas = document.createElement('canvas');
     canvas.id = 'particleCanvas';
     document.body.prepend(canvas);
     const ctx = canvas.getContext('2d');
 
-    let w, h, particles;
-    const count = 42;
-    const maxDist = 110;
+    let w, h, stars;
+    const count = 80;
 
     function resize() {
         w = canvas.width = window.innerWidth;
@@ -31,55 +30,47 @@ function initParticles() {
 
     function create() {
         resize();
-        particles = Array.from({ length: count }, () => ({
+        stars = Array.from({ length: count }, () => ({
             x: Math.random() * w,
             y: Math.random() * h,
-            vx: (Math.random() - 0.5) * 0.4,
-            vy: (Math.random() - 0.5) * 0.4,
-            r: Math.random() * 1.5 + 0.5,
-            o: Math.random() * 0.4 + 0.2
+            r: Math.random() * 1.8 + 0.4,
+            baseAlpha: Math.random() * 0.5 + 0.15,
+            alpha: 0,
+            twinkleSpeed: Math.random() * 0.015 + 0.005,
+            twinkleOffset: Math.random() * Math.PI * 2
         }));
     }
 
     function draw() {
         ctx.clearRect(0, 0, w, h);
-        const isDark = !document.documentElement.hasAttribute('data-theme');
-        const c = isDark ? '79,140,255' : '59,123,247';
+        const t = Date.now() * 0.001;
 
-        particles.forEach(p => {
-            p.x += p.vx;
-            p.y += p.vy;
-            if (p.x < 0) p.x = w;
-            if (p.x > w) p.x = 0;
-            if (p.y < 0) p.y = h;
-            if (p.y > h) p.y = 0;
+        stars.forEach(s => {
+            // Twinkling: oscillate alpha using sin
+            s.alpha = s.baseAlpha * (0.5 + 0.5 * Math.sin(t * s.twinkleSpeed * 60 + s.twinkleOffset));
+
+            // Draw glow
+            const grd = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.r * 3);
+            grd.addColorStop(0, `rgba(255,255,255,${s.alpha})`);
+            grd.addColorStop(0.3, `rgba(180,200,255,${s.alpha * 0.6})`);
+            grd.addColorStop(1, 'rgba(180,200,255,0)');
 
             ctx.beginPath();
-            ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(${c},${p.o})`;
+            ctx.arc(s.x, s.y, s.r * 3, 0, Math.PI * 2);
+            ctx.fillStyle = grd;
+            ctx.fill();
+
+            // Bright core
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(255,255,255,${s.alpha * 1.3})`;
             ctx.fill();
         });
-
-        for (let i = 0; i < particles.length; i++) {
-            for (let j = i + 1; j < particles.length; j++) {
-                const dx = particles[i].x - particles[j].x;
-                const dy = particles[i].y - particles[j].y;
-                const d = Math.sqrt(dx * dx + dy * dy);
-                if (d < maxDist) {
-                    ctx.beginPath();
-                    ctx.moveTo(particles[i].x, particles[i].y);
-                    ctx.lineTo(particles[j].x, particles[j].y);
-                    ctx.strokeStyle = `rgba(${c},${(1 - d / maxDist) * 0.12})`;
-                    ctx.lineWidth = 0.5;
-                    ctx.stroke();
-                }
-            }
-        }
 
         requestAnimationFrame(draw);
     }
 
-    window.addEventListener('resize', resize);
+    window.addEventListener('resize', () => { resize(); create(); });
     create();
     draw();
 }
@@ -118,8 +109,21 @@ function initNav() {
     const btn = document.getElementById('mobileMenuBtn');
     const links = document.getElementById('navLinks');
     if (btn && links) {
-        btn.addEventListener('click', () => links.classList.toggle('show'));
-        links.querySelectorAll('.nav-link').forEach(l => l.addEventListener('click', () => links.classList.remove('show')));
+        btn.addEventListener('click', e => {
+            e.stopPropagation();
+            e.preventDefault();
+            links.classList.toggle('show');
+        });
+        // Close when clicking a link
+        links.querySelectorAll('.nav-link').forEach(l => {
+            l.addEventListener('click', () => links.classList.remove('show'));
+        });
+        // Close when clicking outside
+        document.addEventListener('click', e => {
+            if (!links.contains(e.target) && e.target !== btn) {
+                links.classList.remove('show');
+            }
+        });
     }
 }
 
@@ -128,8 +132,19 @@ function initDropdown() {
     const btn = document.getElementById('userBtn');
     const menu = document.getElementById('dropdownMenu');
     if (btn && menu) {
-        btn.addEventListener('click', e => { e.stopPropagation(); menu.classList.toggle('show'); });
-        document.addEventListener('click', () => menu.classList.remove('show'));
+        btn.addEventListener('click', e => {
+            e.stopPropagation();
+            e.preventDefault();
+            menu.classList.toggle('show');
+        });
+        // Prevent clicks inside menu from closing it
+        menu.addEventListener('click', e => {
+            e.stopPropagation();
+        });
+        // Close when clicking anywhere else
+        document.addEventListener('click', () => {
+            menu.classList.remove('show');
+        });
     }
 }
 

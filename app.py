@@ -14,7 +14,7 @@ from flask_limiter.util import get_remote_address
 from werkzeug.utils import secure_filename
 from PIL import Image
 
-from models import db, User, Schedule, ScheduleImage
+from models import db, User, Schedule, ScheduleImage, ScheduleTag
 
 # ─────────────────────────────────────────────
 # 配置
@@ -193,10 +193,15 @@ TRANSLATIONS = {
         'filter_group': '多人',
         'refresh': '刷新',
         'multi_image': '支持多张图片',
+        'custom_tags': '自定义标签',
+        'add_tag': '添加标签',
+        'tag_title_placeholder': '标题（如：票价、购票链接）',
+        'tag_content_placeholder': '内容（如：2000 泰铢）',
         'year': '年',
         'month': '月',
         'day': '日',
         'all_dates': '全部日期',
+        'all_artists': '全部艺人',
     },
     'en': {
         'site_title': 'StarTrack',
@@ -266,10 +271,15 @@ TRANSLATIONS = {
         'filter_group': 'Group',
         'refresh': 'Refresh',
         'multi_image': 'Multiple images supported',
+        'custom_tags': 'Custom Tags',
+        'add_tag': 'Add Tag',
+        'tag_title_placeholder': 'Title (e.g. Ticket Price, Link)',
+        'tag_content_placeholder': 'Content (e.g. 2000 THB)',
         'year': 'Year',
         'month': 'Month',
         'day': 'Day',
         'all_dates': 'All Dates',
+        'all_artists': 'All Artists',
     },
     'th': {
         'site_title': 'StarTrack',
@@ -339,10 +349,15 @@ TRANSLATIONS = {
         'filter_group': 'กลุ่ม',
         'refresh': 'รีเฟรช',
         'multi_image': 'รองรับหลายภาพ',
+        'custom_tags': 'แท็กกำหนดเอง',
+        'add_tag': 'เพิ่มแท็ก',
+        'tag_title_placeholder': 'ชื่อ (เช่น ราคาตั๋ว, ลิงก์)',
+        'tag_content_placeholder': 'เนื้อหา (เช่น 2000 บาท)',
         'year': 'ปี',
         'month': 'เดือน',
         'day': 'วัน',
         'all_dates': 'ทุกวัน',
+        'all_artists': 'ศิลปินทั้งหมด',
     }
 }
 
@@ -607,6 +622,7 @@ def add_schedule():
         star_name = sanitize_text(request.form.get('star_name', ''), 200)
         event_name = sanitize_text(request.form.get('event_name', ''), 500)
         event_date_str = request.form.get('event_date', '')
+        event_time = request.form.get('event_time', '').strip()
         group_type = request.form.get('group_type', 'solo')
         event_location = request.form.get('event_location', '')
         description = request.form.get('description', '')
@@ -630,6 +646,7 @@ def add_schedule():
         # 创建行程
         schedule = Schedule(
             event_date=event_date,
+            event_time=event_time,
             group_type=group_type,
             creator_id=current_user.id,
         )
@@ -662,6 +679,15 @@ def add_schedule():
             schedule.event_image = saved_images[0][0]
         else:
             schedule.event_image = None
+
+        # 自定义标签
+        tag_titles = request.form.getlist('tag_title')
+        tag_contents = request.form.getlist('tag_content')
+        for i in range(len(tag_titles)):
+            tt = tag_titles[i].strip()
+            tc = tag_contents[i].strip() if i < len(tag_contents) else ''
+            if tt and tc:
+                db.session.add(ScheduleTag(title=tt, content=tc, schedule_id=schedule.id))
 
         db.session.commit()
 
@@ -702,6 +728,7 @@ def edit_schedule(schedule_id):
         save_localized_field(schedule, 'star_name', star_name)
         save_localized_field(schedule, 'event_name', event_name)
         save_localized_field(schedule, 'event_location', event_location)
+        schedule.event_time = event_time
         schedule.group_type = group_type
         schedule.description = description
 
@@ -735,6 +762,16 @@ def edit_schedule(schedule_id):
             first = schedule.images.order_by(ScheduleImage.sort_order).first()
             schedule.event_image = first.filename if first else None
 
+        # 自定义标签：删除旧的，创建新的
+        schedule.tags.delete()
+        tag_titles = request.form.getlist('tag_title')
+        tag_contents = request.form.getlist('tag_content')
+        for i in range(len(tag_titles)):
+            tt = tag_titles[i].strip()
+            tc = tag_contents[i].strip() if i < len(tag_contents) else ''
+            if tt and tc:
+                db.session.add(ScheduleTag(title=tt, content=tc, schedule_id=schedule.id))
+
         db.session.commit()
         flash(t('success_edit'), 'success')
         return redirect(url_for('index'))
@@ -756,6 +793,7 @@ def delete_schedule(schedule_id):
 
     for img in schedule.images.all():
         delete_image(img.filename)
+    schedule.tags.delete()
     delete_image(schedule.event_image)
     db.session.delete(schedule)
     db.session.commit()
@@ -789,6 +827,7 @@ def my_schedules():
 def calendar_view():
     year = request.args.get('year', datetime.now().year, type=int)
     month = request.args.get('month', datetime.now().month, type=int)
+    star_name = request.args.get('star_name', '').strip()
 
     # 限定有效年月
     year = max(1900, min(2100, year))
@@ -799,11 +838,20 @@ def calendar_view():
     _, last_day_of_month = calendar.monthrange(year, month)
     last_day = date(year, month, last_day_of_month)
 
-    # 查询当月所有行程
-    schedules = Schedule.query.filter(
+    # 查询当月行程（可选按艺人筛选）
+    query = Schedule.query.filter(
         Schedule.event_date >= first_day,
         Schedule.event_date <= last_day
-    ).order_by(Schedule.event_date.asc(), Schedule.created_at.asc()).all()
+    )
+    if star_name:
+        query = query.filter(
+            db.or_(
+                Schedule.star_name == star_name,
+                Schedule.star_name_en == star_name,
+                Schedule.star_name_th == star_name,
+            )
+        )
+    schedules = query.order_by(Schedule.event_date.asc(), Schedule.created_at.asc()).all()
 
     # 按日期分组
     schedules_by_date = {}
@@ -812,6 +860,16 @@ def calendar_view():
         if d not in schedules_by_date:
             schedules_by_date[d] = []
         schedules_by_date[d].append(s)
+
+    # 所有艺人名称（去重）
+    all_names = set()
+    for s in Schedule.query.with_entities(
+        Schedule.star_name, Schedule.star_name_en, Schedule.star_name_th
+    ).all():
+        for n in s:
+            if n:
+                all_names.add(n)
+    star_names = sorted(all_names)
 
     # 构建日历网格：从周日开始
     cal = calendar.Calendar(firstweekday=6)
@@ -828,6 +886,8 @@ def calendar_view():
                          month=month,
                          month_days=month_days,
                          schedules_by_date=schedules_by_date,
+                         star_name=star_name,
+                         star_names=star_names,
                          prev_year=prev_year,
                          prev_month=prev_month,
                          next_year=next_year,

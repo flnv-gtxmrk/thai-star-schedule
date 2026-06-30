@@ -4,10 +4,24 @@
 <div class="calendar-page">
     <div class="container">
         <div class="calendar-header">
-            <a href="{{ url_for('calendar_view', year=prev_year, month=prev_month) }}" class="page-btn"><i class="fas fa-chevron-left"></i></a>
+            <a href="{{ url_for('calendar_view', year=prev_year, month=prev_month, star_name=star_name) }}" class="page-btn"><i class="fas fa-chevron-left"></i></a>
             <h1 class="calendar-title">{{ year }} · {{ '%02d'|format(month) }}</h1>
-            <a href="{{ url_for('calendar_view', year=next_year, month=next_month) }}" class="page-btn"><i class="fas fa-chevron-right"></i></a>
+            <a href="{{ url_for('calendar_view', year=next_year, month=next_month, star_name=star_name) }}" class="page-btn"><i class="fas fa-chevron-right"></i></a>
         </div>
+
+        <form method="GET" action="{{ url_for('calendar_view') }}" class="calendar-filter">
+            <input type="hidden" name="year" value="{{ year }}">
+            <input type="hidden" name="month" value="{{ month }}">
+            <div class="calendar-filter-inner">
+                <label>{{ g.t('star_name') }}</label>
+                <select name="star_name" onchange="this.form.submit()">
+                    <option value="">{{ g.t('all_artists') }}</option>
+                    {% for name in star_names %}
+                    <option value="{{ name }}" {% if star_name == name %}selected{% endif %}>{{ name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </form>
 
         <div class="calendar-grid">
             <div class="calendar-weekday">Sun</div>

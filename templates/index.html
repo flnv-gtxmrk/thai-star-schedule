@@ -146,7 +146,7 @@
                     <div class="card-event">{{ schedule._get_localized('event_name', g.lang) }}</div>
                     <div class="card-meta">
                         {% if schedule.event_date %}
-                        <span class="meta-item"><i class="fas fa-calendar"></i> {{ schedule.event_date.strftime('%Y-%m-%d') }}</span>
+                        <span class="meta-item"><i class="fas fa-calendar"></i> {{ schedule.event_date.strftime('%Y-%m-%d') }}{% if schedule.event_time %} {{ schedule.event_time }}{% endif %}</span>
                         {% endif %}
                     </div>
                 </div>

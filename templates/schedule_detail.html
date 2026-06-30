@@ -35,7 +35,7 @@
                         <i class="fas fa-calendar"></i>
                         <div>
                             <span class="meta-label">{{ g.t('event_date') }}</span>
-                            <span class="meta-value">{{ schedule.event_date.strftime('%Y-%m-%d') }}</span>
+                            <span class="meta-value">{{ schedule.event_date.strftime('%Y-%m-%d') }}{% if schedule.event_time %} {{ schedule.event_time }}{% endif %}</span>
                         </div>
                     </div>
                     {% endif %}
@@ -54,6 +54,21 @@
                 <div class="detail-section">
                     <h3>{{ g.t('description') }}</h3>
                     <p>{{ schedule.description }}</p>
+                </div>
+                {% endif %}
+
+                {% set tag_list = schedule.tags.all() %}
+                {% if tag_list %}
+                <div class="detail-section">
+                    <h3>{{ g.t('custom_tags') }}</h3>
+                    <div class="detail-tags-list">
+                        {% for tag in tag_list %}
+                        <div class="detail-tag-item">
+                            <span class="detail-tag-title">{{ tag.title }}</span>
+                            <span class="detail-tag-content">{{ tag.content }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
                 </div>
                 {% endif %}
 
